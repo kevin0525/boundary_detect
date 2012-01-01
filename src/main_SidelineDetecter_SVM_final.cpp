@@ -395,7 +395,12 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		{
 			detectResult.z = 3;
 		}
-
+		if(quadHeight<1.0)
+		{
+			detectResult.z = 0;
+			detectResult.x = 0;
+			detectResult.y = 0;
+		}
 		
 		outputResult = Point3d(detectResult.y,detectResult.x,detectResult.z);//输出坐标赋值
 		
@@ -425,7 +430,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		*/
 		
 		//cout<<"flag"<<outputResult.z<<"  x"<<outputResult.x<<"  y"<<outputResult.y<<endl;//#8.27
-		ROS_INFO("boudary output: flag=\t%d,x=\t%4.2f,y=\t%4.2f",(int)outputResult.z,outputResult.x,outputResult.y);
+		ROS_INFO_THROTTLE(0.2,"boudary output: flag=\t%d,x=\t%4.2f,y=\t%4.2f",(int)outputResult.z,outputResult.x,outputResult.y);
 		msg1.xSide = xSide;
 		msg1.ySide = ySide;
 		msg1.xDis = xDis;

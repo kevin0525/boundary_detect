@@ -29,9 +29,9 @@ using namespace cv;
 //#define ResultVideo "../Data/Result/output.avi"		//测试视频的检测结果
 #define LoadSvmName "/home/aicrobo/iarc2016_zju/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
 #define xMin 0						//场地范围#8.27
-#define xMax 20						//场地范围#8.27
+#define xMax 5						//场地范围#8.27
 #define yMin 0						//场地范围#8.27
-#define yMax 20						//场地范围#8.27
+#define yMax 5						//场地范围#8.27
 //-----------------------继承类----------------------------
 class MySVM : public CvSVM  
 {  
@@ -63,7 +63,7 @@ double imgDis2realDis(double h, double f,double imgDis);
 Mat src;
 double quadHeight = 2.0;//四旋翼高度
 double camF = 419;//焦距的像素长度#8.27
-double angleBias = 0.0;//线角度矫正，即竖线在图像中应有的角度(逆时针为正)
+double angleBias = -0.136;//线角度矫正，即竖线在图像中应有的角度(逆时针为正)
 //输出
 xSideType xSide;//竖线结果
 ySideType ySide;//横线结果
@@ -427,8 +427,8 @@ int main(int argc ,char** argv)
 	image_transport::Subscriber image_sub = it.subscribe("/mv_26804026/image_rect_color",1, imageCallback);
 	//-whd-
 	ros::Subscriber quadrotorHight_sub = nh.subscribe("/dji_sdk/local_position", 10, quadrotorHightCallback);
-	Boundary_pub = nh.advertise<boundary_detect::Boundary>("Boundary", 10);
-	pub = nh.advertise<geometry_msgs::Point>("Boundary_output",10);
+	Boundary_pub = nh.advertise<boundary_detect::Boundary>("boundary", 10);
+	pub = nh.advertise<geometry_msgs::Point>("boundary_output",10);
 	ros::Rate loop_rate(20);
       while(ros::ok())
 	{

@@ -25,6 +25,7 @@ using namespace std;
 using namespace cv;
 //-----------------------宏定义----------------------------
 #define VideoOutputHight 128.0		//输出视频图像的高度
+#define BIAS -0.5					//超平面偏移
 //#define TestVideo "../Data/TestVideo/output.avi"	//用于检测的测试视频
 //#define ResultVideo "../Data/Result/output.avi"		//测试视频的检测结果
 #define LoadSvmName "/home/aicrobo/iarc2016_zju/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
@@ -124,7 +125,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		B = srcChannels[0];G = srcChannels[1];R = srcChannels[2];
 
 		//进行图像分割（色彩空间SVM方法）（矩阵操作方法，速度快）
-		threshold_img = (resultMat.at<float>(0)*R + resultMat.at<float>(1)*G + resultMat.at<float>(2)*B + rho) > -0.5;
+		threshold_img = (resultMat.at<float>(0)*R + resultMat.at<float>(1)*G + resultMat.at<float>(2)*B + rho) > BIAS;
 		//threshold = - 0.273370087*B - (-0.377990603)*G - 0.350543886*R + 32.809016951026422 > 0;//0.273370087等为xml中的数据
 
 		//形态学滤波

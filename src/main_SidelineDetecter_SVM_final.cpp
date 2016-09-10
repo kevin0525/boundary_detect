@@ -28,7 +28,7 @@ using namespace cv;
 #define BIAS -0.5					//超平面偏移
 //#define TestVideo "../Data/TestVideo/output.avi"	//用于检测的测试视频
 //#define ResultVideo "../Data/Result/output.avi"		//测试视频的检测结果
-#define LoadSvmName "/home/aicrobo/iarc2016_zju/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
+#define LoadSvmName "/home/csc301/overlay_ws/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
 #define xMin 0						//场地范围#8.27
 #define xMax 5						//场地范围#8.27
 #define yMin 0						//场地范围#8.27
@@ -213,14 +213,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 					}
 					if (1.0*countLeft/areaLeft>0.6)//判断类型
 					{
-						//cout<<"left"<<1.0*countLeft/areaLeft<<endl;
+						cout<<"left"<<1.0*countLeft/areaLeft<<endl;
 						xSide = leftSide;
 						//line( src, Px1, Px2, Scalar(255,0,0), 1, CV_AA);//画线，point:(列，行)
 
 					} 
 					else if (1.0*countRight/areaRight>0.6)
 					{
-						//cout<<"right"<<1.0*countRight/areaRight<<endl;
+						cout<<"right"<<1.0*countRight/areaRight<<endl;
 						xSide = rightSide;
 						//line( src, Px1, Px2, Scalar(0,255,0), 1, CV_AA);//画线，point:(列，行)
 
@@ -314,14 +314,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 					{
 						cout<<"Bottom"<<1.0*countBottom/areaBottom<<endl;
 						ySide = bottomSide;
-						line( src, Py1, Py2, Scalar(0,0,255), 1, CV_AA);//画线，point:(列，行)
+						//line( src, Py1, Py2, Scalar(0,0,255), 1, CV_AA);//画线，point:(列，行)
 
 					} 
 					else if (1.0*countTop/areaTop>0.6)
 					{
 						cout<<"Top"<<1.0*countTop/areaTop<<endl;
 						ySide = topSide;
-						line( src, Py1, Py2, Scalar(255,255,0), 1, CV_AA);//画线，point:(列，行)
+						//line( src, Py1, Py2, Scalar(255,255,0), 1, CV_AA);//画线，point:(列，行)
 
 					}
 					else

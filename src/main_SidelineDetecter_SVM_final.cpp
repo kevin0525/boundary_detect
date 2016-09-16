@@ -15,6 +15,7 @@
 //-whd-
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/PointStamped.h>
 #include <dji_sdk/LocalPosition.h>
 #include <boundary_detect/Boundary.h>
 
@@ -104,7 +105,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
        
 
 	boundary_detect::Boundary msg1;
-	geometry_msgs::Point output_msgs;
+	geometry_msgs::PointStamped output_msgs;
 	cv_bridge::CvImagePtr cvPtr;
 	try
 	{
@@ -130,9 +131,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		//threshold = - 0.273370087*B - (-0.377990603)*G - 0.350543886*R + 32.809016951026422 > 0;//0.273370087等为xml中的数据
 
 		//形态学滤波
-		morphologyEx(threshold_img,threshold_img,MORPH_CLOSE,getStructuringElement(MORPH_ELLIPSE, Size(9,9)));//形态学滤波：场外去噪//#9.15
-		morphologyEx(threshold_img,threshold_img,MORPH_OPEN,getStructuringElement(MORPH_ELLIPSE, Size(11,11)));//形态学滤波：场内去噪//#9.15
-		
+                //---just for 9.16 test---!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                morphologyEx(threshold_img,threshold_img,MORPH_OPEN,getStructuringElement(MORPH_ELLIPSE, Size(11,11)));//形态学滤波：场内去噪//#9.16
+                morphologyEx(threshold_img,threshold_img,MORPH_CLOSE,getStructuringElement(MORPH_ELLIPSE, Size(9,9)));//形态学滤波：场外去噪//#9.16
+
+                //morphologyEx(threshold_img,threshold_img,MORPH_CLOSE,getStructuringElement(MORPH_ELLIPSE, Size(9,9)));//形态学滤波：场外去噪//#9.15
+                //morphologyEx(threshold_img,threshold_img,MORPH_OPEN,getStructuringElement(MORPH_ELLIPSE, Size(11,11)));//形态学滤波：场内去噪//#9.15
+
+
 		//形态学滤波：边缘检测
 		morphologyEx(threshold_img,edges,MORPH_GRADIENT ,getStructuringElement(MORPH_RECT, Size(7,7)));//#9.15
 
@@ -422,9 +428,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		msg1.xDis = xDis;
 		msg1.yDis = yDis;
 		
-		output_msgs.x = outputResult.x;
-		output_msgs.y = outputResult.y;
-		output_msgs.z = outputResult.z;
+		output_msgs.point.x = outputResult.x;
+		output_msgs.point.y = outputResult.y;
+		output_msgs.point.z = outputResult.z;
+		output_msgs.header.stamp = ros::Time::now();
 		
 		Boundary_pub.publish(msg1);
 		pub.publish(output_msgs);
@@ -468,7 +475,7 @@ int main(int argc ,char** argv)
 	//-whd-
 	ros::Subscriber quadrotorHight_sub = nh.subscribe("/dji_sdk/local_position", 10, quadrotorHightCallback);
 	Boundary_pub = nh.advertise<boundary_detect::Boundary>("boundary", 10);
-	pub = nh.advertise<geometry_msgs::Point>("boundary_output",10);
+	pub = nh.advertise<geometry_msgs::PointStamped>("boundary_output",10);
 	ros::Rate loop_rate(20);
       while(ros::ok())
 	{

@@ -28,7 +28,7 @@ using namespace cv;
 #define BIAS -0.5					//超平面偏移
 //#define TestVideo "../Data/TestVideo/output.avi"	//用于检测的测试视频
 //#define ResultVideo "../Data/Result/output.avi"		//测试视频的检测结果
-#define LoadSvmName "/home/csc301/overlay_ws/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
+#define LoadSvmName "/home/zmart/iarc2016/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
 #define xMin 0						//场地范围#8.27
 #define xMax 5						//场地范围#8.27
 #define yMin 0						//场地范围#8.27
@@ -57,14 +57,15 @@ enum ySideType{noySide,topSide,bottomSide};
 double computeDistance(Point2d P0,Point2d P1,Point2d P2);
 //将像素长度转换为实际长度
 double imgDis2realDis(double h, double f,double imgDis);
-
+//计算点到点的像素长度//#9.15
+double p2pDis(Point2d P0,Point2d P1);
 
 //*******************************输入输出********************************
 //输入
 Mat src;
 double quadHeight = 2.0;//四旋翼高度
 double camF = 419;//焦距的像素长度#8.27
-double angleBias = -0.136;//线角度矫正，即竖线在图像中应有的角度(逆时针为正)
+double angleBias = 0;//线角度矫正，即竖线在图像中应有的角度(逆时针为正)
 //输出
 xSideType xSide;//竖线结果
 ySideType ySide;//横线结果
@@ -129,12 +130,11 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		//threshold = - 0.273370087*B - (-0.377990603)*G - 0.350543886*R + 32.809016951026422 > 0;//0.273370087等为xml中的数据
 
 		//形态学滤波
-		morphologyEx(threshold_img,threshold_img,MORPH_OPEN,getStructuringElement(MORPH_RECT, Size(9,9)));//形态学滤波：去噪
-		//imshow("s22",threshold);
-		//waitKey(1);
-
+		morphologyEx(threshold_img,threshold_img,MORPH_CLOSE,getStructuringElement(MORPH_ELLIPSE, Size(9,9)));//形态学滤波：场外去噪//#9.15
+		morphologyEx(threshold_img,threshold_img,MORPH_OPEN,getStructuringElement(MORPH_ELLIPSE, Size(11,11)));//形态学滤波：场内去噪//#9.15
+		
 		//形态学滤波：边缘检测
-		morphologyEx(threshold_img,edges,MORPH_GRADIENT ,getStructuringElement(MORPH_RECT, Size(5,5)));
+		morphologyEx(threshold_img,edges,MORPH_GRADIENT ,getStructuringElement(MORPH_RECT, Size(7,7)));//#9.15
 
 		//进行霍夫变换
 		HoughLinesP(edges,lines,1,CV_PI/360,48,48,0);
@@ -145,6 +145,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		//找出竖线集合
 		vlines.clear();
 		vector<double> anglex;//竖线集合与场地竖边界的夹角
+		vector<double> lengthx;//竖线长度//#9.15
 		for( size_t i = 0; i < lines.size(); i++ )//找出竖线集合
 		{
 			Vec4i l = lines[i];
@@ -153,6 +154,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 			{
 				vlines.push_back(l);
 				anglex.push_back(abs(angle-angleBias));
+				lengthx.push_back(p2pDis(Point2d(l[0],l[1]),Point2d(l[2],l[3])));//#9.15
 				//line( src, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 1, CV_AA);//画线，point:(列，行)
 			}
 		}
@@ -162,11 +164,15 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		{
 			vector<double> anglexS(anglex);//角度从大到小排序
 			sort(anglexS.begin(),anglexS.end());
+			
+			vector<double> lengthxS(lengthx);//长度从大到小排序//#9.15
+			sort(lengthxS.begin(),lengthxS.end());//#9.15
 
 			for (size_t i = 0;i < anglex.size();i++)
 			{
 				//cout<<anglexS[i]<<" ";
-				if (anglex[i] == anglexS[anglexS.size()-1])//确定竖线
+				//if (anglex[i] == anglexS[anglexS.size()-1])//确定竖线
+				if (lengthx[i] == lengthxS[lengthxS.size()-1])//确定竖线//#9.15
 				{
 					//cout<<"minx"<<anglex[i];
 					Px1 = Point2d(vlines[i][0],vlines[i][1]);
@@ -213,14 +219,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 					}
 					if (1.0*countLeft/areaLeft>0.6)//判断类型
 					{
-						cout<<"left"<<1.0*countLeft/areaLeft<<endl;
+						//cout<<"left"<<1.0*countLeft/areaLeft<<endl;
 						xSide = leftSide;
 						//line( src, Px1, Px2, Scalar(255,0,0), 1, CV_AA);//画线，point:(列，行)
 
 					} 
 					else if (1.0*countRight/areaRight>0.6)
 					{
-						cout<<"right"<<1.0*countRight/areaRight<<endl;
+						//cout<<"right"<<1.0*countRight/areaRight<<endl;
 						xSide = rightSide;
 						//line( src, Px1, Px2, Scalar(0,255,0), 1, CV_AA);//画线，point:(列，行)
 
@@ -245,14 +251,16 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		//找出横线集合
 		hlines.clear();
 		vector<double> angley;//横线集合的角度
+		vector<double> lengthy;//竖线长度//#9.15
 		for( size_t i = 0; i < lines.size(); i++ )//找出横线集合
 		{
 			Vec4i l = lines[i];
-			double angle = atan(double(l[2]-l[0])/double(l[3]-l[1]))/CV_PI*180;//此线与y轴所呈角度
-			if (abs(angle-90-angleBias)<15)
+			double angle = atan(double(l[3]-l[1])/double(l[2]-l[0]))/CV_PI*180;//此线与x轴所呈角度
+			if (abs(angle+angleBias)<15)
 			{
 				hlines.push_back(l);
 				angley.push_back(abs(angle-90-angleBias));
+				lengthy.push_back(p2pDis(Point2d(l[0],l[1]),Point2d(l[2],l[3])));//#9.15
 				//line( src, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,255,255), 1, CV_AA);//画线，point:(列，行)
 			}
 		}
@@ -262,10 +270,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		{
 			vector<double> angleyS(angley);//角度从大到小排序
 			sort(angleyS.begin(),angleyS.end());
+			
+			vector<double> lengthyS(lengthy);//长度从大到小排序//#9.15
+			sort(lengthyS.begin(),lengthyS.end());//#9.15
 			for (size_t i = 0;i < angley.size();i++)
 			{
 				//cout<<angleyS[i]<<" ";
-				if (angley[i] == angleyS[angleyS.size()-1])//确定横线
+				//if (angley[i] == angleyS[angleyS.size()-1])//确定横线
+				if (lengthy[i] == lengthyS[lengthyS.size()-1])//确定竖线//#9.15
 				{
 					//cout<<"miny"<<angley[i];
 					Py1 = Point2d(hlines[i][0],hlines[i][1]);
@@ -312,14 +324,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 					}
 					if (1.0*countBottom/areaBottom>0.6)//判断类型
 					{
-						cout<<"Bottom"<<1.0*countBottom/areaBottom<<endl;
+						//cout<<"Bottom"<<1.0*countBottom/areaBottom<<endl;
 						ySide = bottomSide;
 						//line( src, Py1, Py2, Scalar(0,0,255), 1, CV_AA);//画线，point:(列，行)
 
 					} 
 					else if (1.0*countTop/areaTop>0.6)
 					{
-						cout<<"Top"<<1.0*countTop/areaTop<<endl;
+						//cout<<"Top"<<1.0*countTop/areaTop<<endl;
 						ySide = topSide;
 						//line( src, Py1, Py2, Scalar(255,255,0), 1, CV_AA);//画线，point:(列，行)
 
@@ -375,9 +387,36 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 			detectResult.z = 3;
 		}
 
-		//cout<<"x"<<detectResult.x<<"  y"<<detectResult.y<<"  flag"<<detectResult.z<<endl;#8.27
+		
 		outputResult = Point3d(detectResult.y,detectResult.x,detectResult.z);//输出坐标赋值
-
+		
+		
+// 		//------test---------
+// 		static int i = 0;
+// 		static int dx = -1;
+// 		static int dy = 0;
+// 		static int myflag = 2;
+// 		if(i%200 == 0)
+// 		{
+// 			myflag = 2;
+// 			dx++;
+// 		}
+// 		else if(i%100 == 0)
+// 		{
+// 			myflag = 3;
+// 			dy++;
+// 		}
+// 		else
+// 		{
+// 			myflag = 0;
+// 		}
+// 		outputResult = Point3d(dx,dy,myflag);
+// 		i++;
+// 		//------test end---------
+		
+		
+		//cout<<"flag"<<outputResult.z<<"  x"<<outputResult.x<<"  y"<<outputResult.y<<endl;//#8.27
+		ROS_INFO("boudary output: flag=\t%d,x=\t%4.2f,y=\t%4.2f",(int)outputResult.z,outputResult.x,outputResult.y);
 		msg1.xSide = xSide;
 		msg1.ySide = ySide;
 		msg1.xDis = xDis;
@@ -450,4 +489,8 @@ double computeDistance(Point2d P0,Point2d P1,Point2d P2)
 double imgDis2realDis(double h, double f,double imgDis)
 {
 	return h*imgDis/f;
+}
+double p2pDis(Point2d P0,Point2d P1)//#9.15
+{
+	return sqrt((P1.x - P0.x)*(P1.x - P0.x) + (P1.y - P0.y)*(P1.y - P0.y));
 }

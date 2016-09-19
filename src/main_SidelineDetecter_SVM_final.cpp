@@ -31,9 +31,11 @@ using namespace cv;
 //#define ResultVideo "../Data/Result/output.avi"		//测试视频的检测结果
 #define LoadSvmName "/home/zmart/iarc2016/src/boundary_detect/src/SVM_HOG.xml"	//载入已有的模型文件名称
 #define xMin 0						//场地范围#8.27
-#define xMax 5						//场地范围#8.27
+//#define xMax 5						//场地范围#8.27
 #define yMin 0						//场地范围#8.27
-#define yMax 5						//场地范围#8.27
+//#define yMax 5						//场地范围#8.27
+double xMax;
+double yMax;
 //-----------------------继承类----------------------------
 class MySVM : public CvSVM  
 {  
@@ -396,30 +398,30 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		
 		outputResult = Point3d(detectResult.y,detectResult.x,detectResult.z);//输出坐标赋值
 		
-		
-// 		//------test---------
-// 		static int i = 0;
-// 		static int dx = -1;
-// 		static int dy = 0;
-// 		static int myflag = 2;
-// 		if(i%200 == 0)
-// 		{
-// 			myflag = 2;
-// 			dx++;
-// 		}
-// 		else if(i%100 == 0)
-// 		{
-// 			myflag = 3;
-// 			dy++;
-// 		}
-// 		else
-// 		{
-// 			myflag = 0;
-// 		}
-// 		outputResult = Point3d(dx,dy,myflag);
-// 		i++;
-// 		//------test end---------
-		
+		/*
+		//------test---------
+ 		static int i = 0;
+ 		static int dx = -1;
+ 		static int dy = 0;
+ 		static int myflag = 2;
+ 		if(i%100 == 0)
+ 		{
+ 			myflag = 2;
+ 			dx++;
+ 		}
+ 		else if(i%50 == 0)
+ 		{
+ 			myflag = 3;
+ 			dy++;
+ 		}
+ 		else
+ 		{
+ 			myflag = 0;
+ 		}
+ 		outputResult = Point3d(dx,dy,myflag);
+ 		i++;
+ 		//------test end---------
+		*/
 		
 		//cout<<"flag"<<outputResult.z<<"  x"<<outputResult.x<<"  y"<<outputResult.y<<endl;//#8.27
 		ROS_INFO("boudary output: flag=\t%d,x=\t%4.2f,y=\t%4.2f",(int)outputResult.z,outputResult.x,outputResult.y);
@@ -470,6 +472,10 @@ int main(int argc ,char** argv)
 	rho = svm.get_rho();
 	ros::init(argc, argv, "boundaryDetect_node");
 	ros::NodeHandle nh;
+	ros::NodeHandle nh_param("~");
+	if(!nh_param.getParam("xMax", xMax))xMax = 5.0;
+	if(!nh_param.getParam("yMax", yMax))yMax = 5.0;
+	ROS_ERROR("boudary detect: xMax=%4.2f",(float)xMax);
 	image_transport::ImageTransport it(nh);
 	image_transport::Subscriber image_sub = it.subscribe("/mv_26804026/image_rect_color",1, imageCallback);
 	//-whd-

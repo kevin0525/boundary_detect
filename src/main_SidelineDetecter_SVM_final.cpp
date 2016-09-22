@@ -34,6 +34,7 @@ using namespace cv;
 //#define xMax 5						//场地范围#8.27
 #define yMin 0						//场地范围#8.27
 //#define yMax 5						//场地范围#8.27
+#define sideWidth 0.5//#9.22
 double xMax;
 double yMax;
 //-----------------------继承类----------------------------
@@ -370,11 +371,11 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		{
 			if (xSide == leftSide)
 			{
-				detectResult.x = xMin - xDis;
+				detectResult.x = (xMin - sideWidth) - xDis;
 			} 
 			else
 			{
-				detectResult.x = xMax - xDis;
+				detectResult.x = (xMax + sideWidth) - xDis;
 			}
 			detectResult.z = 1;
 		}
@@ -382,11 +383,11 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		{
 			if (ySide == bottomSide)
 			{
-				detectResult.y = yMin - yDis;
+				detectResult.y = (yMin - sideWidth) - yDis;
 			} 
 			else
 			{
-				detectResult.y = yMax - yDis;
+				detectResult.y = (yMax + sideWidth) - yDis;
 			}
 			detectResult.z = 2;
 		}

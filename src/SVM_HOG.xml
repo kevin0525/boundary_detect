@@ -18,11 +18,11 @@
   <sv_total>1</sv_total>
   <support_vectors>
     <_>
-      4.46927361e-002 -3.57541919e-001 5.92178822e-001</_></support_vectors>
+      1.31712258e-001 -2.24924028e-001 1.07396156e-001</_></support_vectors>
   <decision_functions>
     <_>
       <sv_count>1</sv_count>
-      <rho>5.3016763507018876e+000</rho>
+      <rho>-1.8338426873688249e-001</rho>
       <alpha>
         1.</alpha>
       <index>
